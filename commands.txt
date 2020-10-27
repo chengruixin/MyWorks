@@ -1,1 +1,2 @@
 az acr login --name perceptionengine
+ perceptionengine.azurecr.io/kiosk-test:latest
