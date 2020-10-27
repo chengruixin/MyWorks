@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <style>
+        body {
+            margin: 0 auto; 
+            width: 70%;
+        }
+
+        pre {
+            font-family: 'Courier New', Courier, monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="text-align: center;">Image Labelling App: Demo Design Report</h1>
+    <pre style="text-align: right;">Name: Ruixin Cheng</pre>
+    <p>
+        This document is to introduce the system design of Image Labelling Web App. It will discuss
+        the source of images for being labelled, web pages for showing and labelling images, 
+        ways of storing image-related data & labelled results in server,
+        and the work items/milestones that need to be done step by step. However, this 
+        document might not be strict as I am still thinking about what good designs could be implemented.  
+    </p>
+    <h3>1 Images</h3>
+    <p>There are 3 main concerns regarding to the source images.</p>
+    <!-- <p>
+        Where is the source of images; How we could get enough images and in different categories; For example,
+        we could get a bunch of images related to lions but still we need to get some unrelevant ones that might contian
+        something like african landscapes and other species such as hyenas and eleplants.
+    </p>
+
+    <p>
+        talking about unsplash api and flickr api; privacy concern
+    </p> -->
+
+    <h4>1.1 Source of Images</h4>
+    <p>
+        For the time being, the web app will use a certain number of photos, let's say 100, stored in Node.js server locally to serve as raw data 
+        waiting to be labelled/commented. Later, third party API, such as Unsplash and Flickr API, could be used to get images that need to be labelled.
+        I currently registered an Unsplash account for getting images but frequency of accessing the API is limited to 50 images per hour. I tried to use Flickr api but
+        account registration failed for no reason. I might try them later.
+    </p>
+
+    <h4>1.2 Image Category</h4>
+    <p>
+        Second thing that needs to be considered is that random images still need to be categorized. The current images whatever they are from third party api or
+        are stored locally are entirely random types.  <strong> - ! edit - </strong> There is no specific category for distinguishing one from another,
+        
+        It should be something like that a bunch of images would bse displayed to users if they are to label football images(e.g. Do they contain football? ) and those images could contain irrelevant content. For example, 
+        users are verifying images that contain lion but there should be some images that are irrelevant, let's say having African landscapes or other species.   
+    </p>
+
+    <h4>1.3 Image Caption</h4>
+    <p>
+        One thing we need to concern is how we could get caption or description of an image.
+    </p>
+    <h4>1.3 Privacy</h4>
+    <p>
+        Another thing that needs to be concerned is image privacy. Some images might contain privacy issues that need to be mosaicked. 
+        I am not really sure how to do mosaiking automatically. There should be some researches on it.
+    </p>
+    <h3>2 Web Pages </h3>
+    <p>
+        <!-- There should be a navbar or sidebar for navtigation between pages. Pages include home pages for selecting which labelling task
+        users are to do, specific task pages such as image label verification. image caption, handwriting recognition and
+        facial expression. and one more web page for showing users' achievements, things like how manys labelling/tagging tasks they have done so far.
+         -->
+         There would be several pages for showing web content:
+        <ul>
+            
+            <li>On the top of window or side of it, there will be navbar/side bar for navigation between pages</li>
+            <li>
+                Login & Signup pages will be displayed when users need to login/logout/signup
+            </li>
+            <li>
+                A home page will be displayed as index page which leads to image labelling task pages.
+            </li>
+            <li>
+                A page for showing users' achievements will be displayed
+            </li>
+        </ul>
+
+    </p>
+
+    <h4>2.1 Nav bar</h4>
+    <p>
+        A navigation bar on the top of window or side of it is needed mainly for showing links to home page, achievement page and user registration page.
+    </p>
+
+    <h4>2.2 Registration pages</h4>
+    <p>
+        There could be two pages for showing forms of login and signup separately.
+    </p>
+
+    <h4>
+        2.3 Home Page
+    </h4>
+
+    <p>
+        This is main web content of this web app. At '/' page, it will show all image tagging tasks one by one. Going further, there would be
+        '/:task' page for showing specific tasks users can play with. For example, '/imagelabelling' could allow users to judge whether a page contains 
+        the object that the task asks. Currently, there will be '/imagelabelling' and 'image-captioning' task pages.
+    </p>
+
+    <h5>
+        Web layout of image tasks
+    </h5>
+    <div >
+        <img  style="width: 100%; display: block;" src="web-layout.png" alt="">
+    </div>
+    <!-- <p>
+        <strong>We need to specify what web contents would be in which web pages, use a list </strong>
+    </p> -->
+    
+    <h4>
+        2.4 Achievement page
+    </h4>
+
+    <p>
+        This page will show what how many tasks users have finished so far.
+    </p>
+    <h3>3 Data structure of Images</h3>
+
+    <h4>3.1 Choice of Database</h4>
+    <p>
+        Using Key-value database to store training data is recommended. It does not get involved with transactions or other secure operations where MySQL/PostreSQL would do.
+        Data value mostly is relatively at low level and its scale might be expanded potentially. Key-value database fits into place. For the time being, web app 
+        could run on a local MongoDB app for testing and demonstration purposes. Later, it could be connected to Azure Cosmos DB. There are some useful links for 
+        cloud-based database configurations down below.
+    </p>
+    <p>
+        <a href="https://docs.microsoft.com/en-us/azure/cosmos-db/connect-mongodb-account">Connecting existing MongoDB app to COSMOS DB</a>
+
+    </p>
+
+    <p>
+        <a href="https://docs.microsoft.com/en-us/azure/cosmos-db/mongodb-introduction">Azure Cosmos DB's API for MongoDB</a>
+
+    </p>
+    
+    <h4>3.2 Data structure / schema of image data</h4>
+    <p> 
+        <!-- talking about data structure -->
+        Schemas of Image and User are as follow. 
+        Everytime when users post a request( yes or no) to current image, all the server needs to do is to find that image by 'url'
+        and push the boolean value to its related task. I did research on Google Crowdsource and thought that the repeated post request on the same 
+        image might not cover the old post request by the same user. It will simply push a new value to the array instead. Otherwise, it will need to 
+        keep track of all users' submits and edit their old submit, which might be a little bit time and space consuming.
+    </p>
+
+    <h5>Image:</h5>
+    <pre>
+    {
+        url : String,
+        tasks : {
+            'doesContainXXX' : [Boolean],
+            'isGoodCaptionOfXXX' : [Boolean]，
+            ...
+        }
+    }
+    </pre>  
+    <h5>User:</h5>
+    <pre>
+    {
+        username : String,
+        hashedPassword : String,
+        Contributions : {
+            'imageLabelling' : Number,
+            'imageCaptioning' : Number
+        }
+    }
+    </pre>
+
+    <h3>
+        4 Work Items
+    </h3>
+
+    <p>
+        Preparation:
+    </p>
+    <ol>
+        <li>Set up react and a node.js server</li>
+        <li>Host 100 images on server for the time being</li>
+        <li>Find a reliable API for getting random but categorized image in long term(this can be done later)</li>
+        <li>Connect to MongoDB locally which will be cloud-based later on</li>
+        
+    </ol>
+
+    <p>
+        Clident side implementation：
+    </p>
+
+    <ol>
+        <li>Implement a navbar</li>
+        <li>Implement frontend pages and its relevant functions: home page, task pages</li>
+        <li>Implement frontend pages and its relevant functions: registration page, achievement page</li>
+        <li>Put links to web pages in navbar</li>
+    </ol>
+
+    <p>
+        (During the development, we may need to set up routes/apis for requests between React and Node.js if needed)
+    </p>
+
+    <!-- <div 
+        style="width: 250px; height: 250px;  margin: 2em;
+        clip-path: polygon(25% 0, 100% 50%, 50% 100%);
+        background: url('web-layout.png')  rgb(117, 134, 134);
+        ">
+
+    </div> -->
+</body>
+</html>

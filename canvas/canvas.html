@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <canvas id="drawing" width="800" height="500"></canvas>
+    <script>
+        let drawing = document.getElementById('drawing');
+        drawMicrosoft();
+        function drawMicrosoft() {
+            var context = drawing.getContext('2d');
+
+            // context.strokeStyle = "#ff3333";
+            // context.lineWidth = 1;
+            // context.lineJoin = "round";
+            // context.strokeRect(10, 10, 50, 50);
+            context.fillStyle = "#ff3333";
+            context.fillRect(10, 10, 50, 50);
+
+            // context.strokeStyle = "#00cc44";
+            // context.lineWidth = 1;
+            // context.lineJoin = "round";
+            // context.strokeRect(64, 10, 50, 50);
+            context.fillStyle = "#00cc44";
+            context.fillRect(64, 10, 50, 50);
+
+            // context.strokeStyle = "#3385ff";
+            // context.lineWidth = 1;
+            // context.lineJoin = "round";
+            // context.strokeRect(10, 64, 50, 50);
+            context.fillStyle = "#3385ff";
+            context.fillRect(10, 64, 50, 50);
+
+            // context.strokeStyle = "#ffc34d";
+            // context.lineWidth = 1;
+            // context.lineJoin = "round";
+            // context.strokeRect(64, 64, 50, 50);
+            context.fillStyle = "#ffc34d";
+            context.fillRect(65, 65, 50, 50);
+
+        }
+        /* if (drawing.getContext) {
+            var context = drawing.getContext('2d');
+
+            // context.strokeStyle = "#ff3333";
+            // context.lineWidth = 1;
+            // context.lineJoin = "round";
+            // context.strokeRect(10, 10, 50, 50);
+            context.fillStyle = "#ff3333";
+            context.fillRect(10, 10, 50, 50);
+
+            // context.strokeStyle = "#00cc44";
+            // context.lineWidth = 1;
+            // context.lineJoin = "round";
+            // context.strokeRect(64, 10, 50, 50);
+            context.fillStyle = "#00cc44";
+            context.fillRect(64, 10, 50, 50);
+
+            // context.strokeStyle = "#3385ff";
+            // context.lineWidth = 1;
+            // context.lineJoin = "round";
+            // context.strokeRect(10, 64, 50, 50);
+            context.fillStyle = "#3385ff";
+            context.fillRect(10, 64, 50, 50);
+
+            // context.strokeStyle = "#ffc34d";
+            // context.lineWidth = 1;
+            // context.lineJoin = "round";
+            // context.strokeRect(64, 64, 50, 50);
+            context.fillStyle = "#ffc34d";
+            context.fillRect(65, 65, 50, 50);
+
+            
+        } */
+        // if (drawing.getContext) {
+        //     var ctx = drawing.getContext('2d');
+        //     ctx.beginPath();
+        //     // context.arc(100, 100, 50, 0, 2 * Math.PI, true);
+
+        //     // context.moveTo(85, 80);
+
+        //     // context.arc(80, 80, 5, 0, 2 * Math.PI, false);
+
+        //     // context.moveTo(125, 80);
+        //     // context.arc(120, 80, 5, 0, 2 * Math.PI, false);
+
+        //     // context.arcTo(80, 125, 120, 125, 10)
+        //     // context.stroke();
+        //     ctx.moveTo(20, 20);           // Create a starting point
+        //     ctx.lineTo(100, 20);          // Create a horizontal line
+        //     ctx.arcTo(150, 20, 150, 70, 50); // Create an arc
+        //     // ctx.lineTo(150, 120);         // Continue with vertical line
+        //     ctx.stroke();
+        // }
+        // if (drawing.getContext) {
+        //     var context = drawing.getContext('2d');
+        //     // context.fillRect(98, 98, 2, 2);
+        //     context.beginPath();
+
+        //     context.arc(100, 100, 99, 0, 2 * Math.PI, false);
+        //     context.moveTo(160, 100);
+        //     context.arc(100, 100, 60, 0, 2 * Math.PI, false);
+
+        //     context.moveTo(100, 100);
+        //     context.lineTo(100, 50);
+        //     context.moveTo(100, 100);
+        //     context.lineTo(60, 100);
+
+
+        //     context.stroke();
+
+        //     context.font = "bold 14px Arial";
+        //     context.textAlign = "center";
+        //     context.textBaseline = "middle";
+        //     context.fillText("12asdfasdfas", 100, 300);
+        // }
+    </script>
+</body>
+
+</html>

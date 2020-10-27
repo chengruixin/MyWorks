@@ -1,0 +1,294 @@
+$ProfileName = 'MSFTVPN'
+$ProfileNameEscaped = $ProfileName -replace ' ', '%20'
+
+#Older $Version =  21180124201910
+$Version =  21180927201901
+
+
+$ProfileXML = '<VPNProfile>
+  <RememberCredentials>true</RememberCredentials>
+  <DeviceTunnel>false</DeviceTunnel>
+  <AlwaysOn>true</AlwaysOn>
+  <DnsSuffix>corp.microsoft.com</DnsSuffix>
+  <TrustedNetworkDetection>corp.microsoft.com</TrustedNetworkDetection>
+  <DeviceCompliance>
+    <Enabled>true</Enabled>
+    <Sso>
+      <Enabled>false</Enabled>
+      <Eku>1.3.6.1.5.5.7.3.2</Eku> 
+      <IssuerHash>bd7a7e652598b7456add8638b51d384ef2ac3d28;b1e42456f9b40810ec02009a408cf5f34d63da36;bb50ed7c643db4989cb7dc294081e7c83cab1fbc;b4a7e0ae4ac88500df4495a6a77614217a7793d8;3e33ebaf7862e6f1593f82c5cf1034f989359d09;3776672132b08abbae9c6f209e96ffa01ba646cd;e56b2135d5c052be9caa809efbfff1a6b5149610;ba97d39b2601d303b69bb3b925d2dfe85cc4f49a;75f5069ca4120e9bdbbca1d99dd0f075fa3bb878;28252975a2b0d79e0bf5f19a81c483e8c6c2e94a;12392dd6e5f52a45b33dfd1a5ba3668e8b00b4f4;c27817579bc4a1ba626f1f7ed5ff0cb89740da6c;350234ff261ecd23565c266ffc5fdf146ad5ed4d;d83305599aecdf05aab04b83766f013ed649a1ea;37ab15eda35664448c00fb30f00a76d87fe9a855;b08e3ab62e8f020d5005fa32651fe50465af2248;2f4e6911814ec1bfdaa505686f5623cea47ed693
+      </IssuerHash>     
+    </Sso>
+  </DeviceCompliance>
+  <PluginProfile>  
+    <ServerUrlList>msftvpn.ras.microsoft.com;Automatic</ServerUrlList>  
+    <PluginPackageFamilyName>PaloAltoNetworks.GlobalProtect_rn9aeerfb38dg</PluginPackageFamilyName>  
+    <CustomConfiguration>&lt;xml/&gt;</CustomConfiguration>  
+  </PluginProfile>
+  <DomainNameInformation>  
+    <DomainName>corp.microsoft.com</DomainName>  
+    <DnsServers>10.50.50.50,10.50.10.50</DnsServers>
+    <AutoTrigger>true</AutoTrigger>
+  </DomainNameInformation>
+  <RegisterDNS>true</RegisterDNS>  
+</VPNProfile>'
+
+
+###########################
+###########################
+###########################
+$EventLogName = "$ProfileName Setup"
+$EventSourceName = "$ProfileName  " + "$Version"
+New-Eventlog -LogName "$EventLogName" -Source "$EventSourceName" -ErrorAction SilentlyContinue
+$Message = 'Start.'
+Write-EventLog -LogName "$EventLogName" -Source "$EventSourceName" -Message "$Message" -Id 100 -Category 0 -EntryType Information
+Write-Host "$Message"
+
+
+###########################
+# Identify OS build number
+###########################
+try
+{
+    $OsInfo = Get-WmiObject -class Win32_OperatingSystem
+    $OsBuild = $OsInfo.BuildNumber
+    if ($OsBuild -lt '14332')
+    {
+        $Message = "$ProfileName is not available.  OS build must be at least 14332."
+        Write-EventLog -LogName "$EventLogName" -Source "$EventSourceName" -Message "$Message" -Id 202 -Category 0 -EntryType Warning
+        Write-Host "$Message"
+        [System.Environment]::Exit(202)
+    } else {
+        $Message = "$ProfileName is available.  OS build is at least 14332."
+        Write-EventLog -LogName "$EventLogName" -Source "$EventSourceName" -Message "$Message" -Id 200 -Category 0 -EntryType Information
+        Write-Host "$Message"
+    }
+}
+catch [Exception]
+{
+    $Message = "Unable to obtain OS build number: $_"
+    Write-EventLog -LogName "$EventLogName" -Source -Source "$EventSourceName" -Message "$Message" -Id 201 -Category 0 -EntryType Error
+    Write-Host "$Message"
+    [System.Environment]::Exit(201)
+}
+
+
+###########################
+###########################
+###########################
+$ProfileXML = $ProfileXML -replace '<', '&lt;'
+$ProfileXML = $ProfileXML -replace '>', '&gt;'
+$ProfileXML = $ProfileXML -replace '"', '&quot;'
+
+$nodeCSPURI = './Vendor/MSFT/VPNv2'
+$namespaceName = 'root\cimv2\mdm\dmmap'
+$className = 'MDM_VPNv2_01'
+
+###########################
+# Get user SID
+###########################
+try 
+{
+    $SidValue = (whoami /user)[6].Split()[1]
+
+    $Message = "User SID is $SidValue."
+    Write-EventLog -LogName "$EventLogName" -Source "$EventSourceName" -Message "$Message" -Id 300 -Category 0 -EntryType Information
+    Write-Host "$Message"
+}
+catch [Exception]
+{
+    $Message = "Unable to get user SID. User may be logged on over Remote Desktop: $_"
+    Write-EventLog -LogName "$EventLogName" -Source "$EventSourceName" -Message "$Message" -Id 302 -Category 0 -EntryType Warning
+    Write-Host "$Message"
+   [System.Environment]::Exit(302)
+}
+
+$session = New-CimSession
+$options = New-Object Microsoft.Management.Infrastructure.Options.CimOperationOptions
+$options.SetCustomOption('PolicyPlatformContext_PrincipalContext_Type', 'PolicyPlatform_UserContext', $false)
+$options.SetCustomOption('PolicyPlatformContext_PrincipalContext_Id', "$SidValue", $false)
+
+###########################
+# Verify current VPN profile version
+###########################
+$MsitAutoVpnVersionPath = "hklm:\software\MicrosoftIT\$ProfileName\" + $SidValue
+$MsitAutoVpnVersion = (Get-ItemProperty -Path "$MsitAutoVpnVersionPath" -ErrorAction SilentlyContinue).MsitAutoVpnVersion
+
+if ($Version -le $MsitAutoVpnVersion)
+{
+    $existingInstances = $session.EnumerateInstances($namespaceName, $className, $options)
+    foreach ($existingInstance in $existingInstances)
+    {
+        $InstanceId = $existingInstance.InstanceID
+        if ("$InstanceId" -like "$ProfileNameEscaped")
+        {
+            $Message = "User already has latest version of $ProfileName profile."
+            Write-EventLog -LogName "$EventLogName" -Source "$EventSourceName" -Message "$Message" -Id 410 -Category 0 -EntryType Information
+            Write-Host "$Message"
+            [System.Environment]::Exit(410)
+        }
+    }
+} 
+$Message = "$ProfileName profile either does not exist or is out-of-date."
+Write-EventLog -LogName "$EventLogName" -Source "$EventSourceName" -Message "$Message" -Id 400 -Category 0 -EntryType Information
+Write-Host "$Message"
+
+###########################
+# Delete old VPN profile
+###########################
+try
+{
+    $deleteInstances = $session.EnumerateInstances($namespaceName, $className, $options)
+    foreach ($deleteInstance in $deleteInstances)
+    {
+        $InstanceId = $deleteInstance.InstanceID
+        if ("$InstanceId" -eq "$ProfileNameEscaped")
+        {
+            $session.DeleteInstance($namespaceName, $deleteInstance, $options)
+            $Message = "Removed $ProfileName profile $InstanceId"
+            Write-EventLog -LogName "$EventLogName" -Source "$EventSourceName" -Message "$Message" -Id 500 -Category 0 -EntryType Information
+            Write-Host "$Message"
+        } else {
+            $Message = "Ignoring existing VPN profile $InstanceId"
+            Write-EventLog -LogName "$EventLogName" -Source "$EventSourceName" -Message "$Message" -Id 510 -Category 0 -EntryType Information
+            Write-Host "$Message"
+        }
+    }
+}
+catch [Exception]
+{
+    $Message = "Unable to remove existing outdated instance(s) of $ProfileName profile: $_"
+    Write-EventLog -LogName "$EventLogName" -Source "$EventSourceName" -Message "$Message" -Id 501 -Category 0 -EntryType Error
+    Write-Host "$Message"
+    [System.Environment]::Exit(501)
+}
+
+###########################
+# Create new VPN profile
+###########################
+try
+{
+    gci -Recurse HKLM:\SOFTWARE\Microsoft\EnterpriseResourceManager\Tracked\ | % { $KEYPATH=$_; $RK=get-itemproperty hklm:\$KEYPATH; $RK.PSObject.Properties | ForEach-Object { if ($_.Value -eq './user/Vendor/MSFT/VPNv2/MSFTVPN') { remove-itemproperty -path "hklm:\$($KEYPATH)" -name $($_.name) } } }
+    $newInstance = New-Object Microsoft.Management.Infrastructure.CimInstance $className, $namespaceName
+    $property = [Microsoft.Management.Infrastructure.CimProperty]::Create("ParentID", "$nodeCSPURI", 'String', 'Key')
+    $newInstance.CimInstanceProperties.Add($property)
+    $property = [Microsoft.Management.Infrastructure.CimProperty]::Create("InstanceID", "$ProfileNameEscaped", 'String', 'Key')
+    $newInstance.CimInstanceProperties.Add($property)
+    $property = [Microsoft.Management.Infrastructure.CimProperty]::Create("ProfileXML", "$ProfileXML", 'String', 'Property')
+    $newInstance.CimInstanceProperties.Add($property)
+
+    $session.CreateInstance($namespaceName, $newInstance, $options)
+    $Message = "Created $ProfileName profile."
+    Write-EventLog -LogName "$EventLogName" -Source "$EventSourceName" -Message "$Message" -Id 600 -Category 0 -EntryType Information
+    Write-Host "$Message"
+}
+catch [Exception]
+{
+    $Message = "Unable to create $ProfileName profile: $_"
+    Write-EventLog -LogName "$EventLogName" -Source "$EventSourceName" -Message "$Message" -Id 601 -Category 0 -EntryType Error
+    Write-Host "$Message"
+    [System.Environment]::Exit(601)
+}
+
+###########################
+# Update profile version number
+###########################
+try
+{
+    New-Item -Path "$MsitAutoVpnVersionPath" -Force
+    Set-ItemProperty -Path "$MsitAutoVpnVersionPath" -Name 'MsitAutoVpnVersion' -Value $Version
+    $Message = "Updated $ProfileName version."
+    Write-EventLog -LogName "$EventLogName" -Source "$EventSourceName" -Message "$Message" -Id 777 -Category 0 -EntryType Information
+    Write-Host "$Message"
+}
+catch [Exception]
+{
+    $Message = "Unable to update $ProfileName version: $_"
+    Write-EventLog -LogName "$EventLogName" -Source "$EventSourceName" -Message "$Message" -Id 701 -Category 0 -EntryType Error
+    Write-Host "$Message"
+    [System.Environment]::Exit(701)
+}
+
+###########################
+# Install firewall rules for Skype4Business
+###########################
+try
+{
+    Remove-NetFirewallRule -Group 'MSIT Skype over VPN' -PolicyStoreSource PersistentStore
+
+    $paths = [string[]]@(
+        '\Microsoft Lync Attendee\AttendeeCommunicator.exe'
+        '\Microsoft Lync\communicator.exe'
+        '\Microsoft Office 15\root\office15\lync.exe'
+        '\Microsoft Office Communicator\communicator.exe'
+        '\Microsoft Office\Live Meeting 8\Console\PWConsole.exe'
+        '\Microsoft Office\Office15\lync.exe'
+        '\Microsoft Office\root\Office16\lync.exe'
+        '\Microsoft\PreCallDiagTool\PreCallDiagTool.exe'
+        '\WindowsApps\Microsoft.LyncMX_15.0.4319.2000_x64__8wekyb3d8bbwe\LyncMX.exe'
+    )
+
+    foreach ($path in $paths)
+    {
+        $fullPath = '%ProgramFiles%' + $Path
+        Write-Host $fullPath
+        New-NetFirewallRule `
+            -DisplayName         'MSIT Skype over VPN' `
+            -PolicyStore         PersistentStore `
+            -Group               'MSIT Skype over VPN'`
+            -Profile             Any `
+            -Direction           Inbound `
+            -InterfaceType       RemoteAccess `
+            -Action              Block `
+            -Program             "$fullPath"
+
+        New-NetFirewallRule `
+            -DisplayName         'MSIT Skype over VPN' `
+            -PolicyStore         PersistentStore `
+            -Group               'MSIT Skype over VPN'`
+            -Profile             Any `
+            -Direction           Outbound `
+            -InterfaceType       RemoteAccess `
+            -Action              Block `
+            -Program             "$fullPath"
+
+        $fullPath = '%ProgramFiles(x86)%' + $Path
+        Write-Host $fullPath
+        New-NetFirewallRule `
+            -DisplayName         'MSIT Skype over VPN' `
+            -PolicyStore         PersistentStore `
+            -Group               'MSIT Skype over VPN'`
+            -Profile             Any `
+            -Direction           Inbound `
+            -InterfaceType       RemoteAccess `
+            -Action              Block `
+            -Program             "$fullPath"
+
+        New-NetFirewallRule `
+            -DisplayName         'MSIT Skype over VPN' `
+            -PolicyStore         PersistentStore `
+            -Group               'MSIT Skype over VPN'`
+            -Profile             Any `
+            -Direction           Outbound `
+            -InterfaceType       RemoteAccess `
+            -Action              Block `
+            -Program             "$fullPath"
+    }
+
+    $Message = "Updated firewall rules for Skype4Business."
+    Write-EventLog -LogName "$EventLogName" -Source "$EventSourceName" -Message "$Message" -Id 900 -Category 0 -EntryType Information
+    Write-Host "$Message"
+}
+catch [Exception]
+{
+    $Message = "Error when updating firewall rules: $_"
+    Write-EventLog -LogName "$EventLogName" -Source "$EventSourceName" -Message "$Message" -Id 901 -Category 0 -EntryType Error
+    Write-Host "$Message"
+    [System.Environment]::Exit(901)
+}
+
+$Message = "Complete."
+Write-EventLog -LogName "$EventLogName" -Source "$EventSourceName" -Message "$Message" -Id 800 -Category 0 -EntryType Information
+Write-Host "$Message"
+
+[System.Environment]::Exit(0)

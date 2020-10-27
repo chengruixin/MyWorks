@@ -1,0 +1,65 @@
+docker run hello-world
+docker imgaes
+docker version
+docker info
+docker <command> --help
+
+<docs.docker.com> -> /reference
+
+镜像命令：
+docker images
+{
+    REPOSITORY : source of the images,
+    TAG : the tag of images,
+    IMAGE ID : id of images,
+    CREATED, 
+    SIZE 
+}
+
+-q, -a
+
+docker search <imageName>
+
+docker pull <imageName>
+docker pull mysql:5.7(specified should be appeared on official website from docker hub...)
+
+(Layered download method is important to docker. 
+Existed files can be shared that there is no more needs for being re-downloaded again.)
+
+
+docker rmi -f [<imageID>]
+docker rmi -f $(docker images -aq)
+
+
+容器命令：
+（containers can only be used when images are available)
+
+docker run [options] <image>
+
+--name = "CustomName"
+-d 后台运行
+-i,-t or -it 
+-P : specified port
+-p : randomized port
+
+docker run -it centos /bin/bash 启动并进入容器
+exit 退出容器并停止
+Ctrl + P + Q 退出不停止
+
+列出所有运行中的容器
+docker ps 
+docker ps  -a, -q, -aq
+
+删除容器
+docker rm <containerID> //specified id container
+docker rm -f $(docker ps -aq) // all containers
+docker ps -a -q | xargs docker rm 
+
+docker start <containerID>
+docker restart <containerID>
+docker stop <containerID>
+docker kill <containerID>
+
+
+查看日志
+docker logs [options] <container>

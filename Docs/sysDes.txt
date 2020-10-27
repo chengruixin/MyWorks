@@ -1,0 +1,7 @@
+图片从哪里找， flickr， concern privacy
+
+图片的数据结构如何
+
+哪些页面去展示图片，
+
+produce items。。。
